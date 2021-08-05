@@ -6,6 +6,15 @@ MAIN_URL = 'http://planeta.kg'
 INITIAL_CATEGORIES = '/catalog/kompyutery_noutbuki_planshety_i_org_tekhnika/'
 headers = {"User-Agent":"Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11"}
 
+def parse_initial_categories(main_url):
+    html = requests.get(main_url, headers=headers).text
+    doc = BS(html, 'lxml')
+    menu = doc.find("div", class_="sub-menu").find_all("div", class_="block-4")
+    initial_categories = []
+    for categories in menu:
+        [initial_categories.append(c.get("href")) for c in categories.find_all("a")]
+    return initial_categories
+
 def parse_categories_urls(main_url):
     html = requests.get(main_url, headers=headers).text
     doc = BS(html, 'lxml')
@@ -49,15 +58,16 @@ def main():
     with open("data.csv", 'w') as file:
         writer = csv.writer(file)
         writer.writerow(["title", "category", "price", "image"])
-    categories = parse_categories_urls(MAIN_URL + INITIAL_CATEGORIES)
-    for category in categories:
-        subcategories = parse_subcategories(MAIN_URL + category)
-        if subcategories:
-            for subcategory in subcategories:
-                parse_info(MAIN_URL + subcategory)
-        else:
-            parse_info(MAIN_URL + category)
-
+    initial_categories = parse_initial_categories(MAIN_URL)
+    for init_cat in initial_categories:
+        categories = parse_categories_urls(MAIN_URL + init_cat)
+        for category in categories:
+            subcategories = parse_subcategories(MAIN_URL + category)
+            if subcategories:
+                for subcategory in subcategories:
+                    parse_info(MAIN_URL + subcategory)
+            else:
+                parse_info(MAIN_URL + category)
 
 
 main()
